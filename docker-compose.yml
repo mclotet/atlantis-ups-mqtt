@@ -1,0 +1,42 @@
+services:
+
+  nut-upsd:
+    # NUT daemon — monitors the UPS via USB and exposes it over the network
+    image: instantlinux/nut-upsd
+    container_name: nut-upsd
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Madrid
+      - DRIVER=usbhid-ups
+      - SERIAL=${UPS_SERIAL}
+      - LISTEN=0.0.0.0
+      - USERNAME=${NUT_USER}
+      - PASSWORD=${NUT_PASSWORD}
+      - MODE=netserver
+    devices:
+      # Override UPS_USB_PATH in .env if your UPS is on a different USB path
+      - ${UPS_USB_PATH:-/dev/bus/usb/003}:/dev/bus/usb/003
+    secrets:
+      - nut-upsd-password
+
+  ups-mqtt:
+    # Polls nut-upsd and publishes UPS telemetry to MQTT
+    build: .
+    container_name: ups-mqtt
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - UPS_NAME=${UPS_NAME}
+      - UPS_HOST=nut-upsd
+      - UPS_PORT=${UPS_PORT}
+      - MQTT_HOST=${MQTT_HOST}
+      - MQTT_PORT=${MQTT_PORT}
+      - MQTT_TOPIC=${MQTT_TOPIC}
+      - SAMPLE_RATE_ONLINE=${SAMPLE_RATE_ONLINE}
+      - SAMPLE_RATE_OFFLINE=${SAMPLE_RATE_OFFLINE}
+    depends_on:
+      - nut-upsd
+
+secrets:
+  nut-upsd-password:
+    file: ./.nut/nut-upsd-password
