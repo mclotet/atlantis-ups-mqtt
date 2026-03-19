@@ -286,7 +286,7 @@ def test_on_connect_failure_does_not_set_connected():
 def test_on_disconnect_clears_connected_flag():
     ups_mqtt._connected = True
     ups_mqtt._logger = None
-    ups_mqtt._shutdown = False
+    ups_mqtt._shutdown.clear()
     ups_mqtt.on_disconnect(None, None, None, 0, None)
     assert ups_mqtt._connected is False
 
@@ -296,6 +296,6 @@ def test_on_disconnect_clears_connected_flag():
 # ---------------------------------------------------------------------------
 
 def test_handle_sigterm_sets_shutdown_flag():
-    ups_mqtt._shutdown = False
+    ups_mqtt._shutdown.clear()
     ups_mqtt.handle_sigterm(None, None)
-    assert ups_mqtt._shutdown is True
+    assert ups_mqtt._shutdown.is_set() is True

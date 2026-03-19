@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -51,7 +52,7 @@ avail_topic = build_availability_topic(ATL_GROUP_ID, ATL_EDGE_NODE_ID, ATL_DEVIC
 # ---------------------------------------------------------------------------
 
 _connected = False
-_shutdown = False
+_shutdown = threading.Event()
 _logger = None  # set after MQTT client is ready
 
 
@@ -76,7 +77,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 def on_disconnect(client, userdata, flags, reason_code, properties):
     global _connected
     _connected = False
-    if _logger and not _shutdown:
+    if _logger and not _shutdown.is_set():
         _logger.warning("Disconnected from MQTT broker", extra={"subsystem": "mqtt"})
 
 
@@ -156,8 +157,7 @@ def publish_ups_status(client, ups_data, ts):
 # ---------------------------------------------------------------------------
 
 def handle_sigterm(signum, frame):
-    global _shutdown
-    _shutdown = True
+    _shutdown.set()
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +165,7 @@ def handle_sigterm(signum, frame):
 # ---------------------------------------------------------------------------
 
 def main():
-    global _connected, _shutdown, _logger
+    global _connected, _logger
 
     signal.signal(signal.SIGTERM, handle_sigterm)
     signal.signal(signal.SIGINT, handle_sigterm)
@@ -186,7 +186,7 @@ def main():
 
     # Initial broker connection with retry
     backoff = 1
-    while not _shutdown:
+    while not _shutdown.is_set():
         try:
             _logger.info(f"Connecting to MQTT broker at {MQTT_HOST}:{MQTT_PORT}", extra={"subsystem": "mqtt"})
             client.connect(MQTT_HOST, MQTT_PORT, keepalive=60)
@@ -202,18 +202,18 @@ def main():
             break
         except Exception as e:
             _logger.error(f"Could not connect to broker: {e} — retrying in {backoff}s", extra={"subsystem": "mqtt"})
-            time.sleep(backoff)
+            _shutdown.wait(backoff)
             backoff = min(backoff * 2, 60)
 
-    if _shutdown:
+    if _shutdown.is_set():
         sys.exit(0)
 
     # Main loop
     backoff = 1
-    while not _shutdown:
+    while not _shutdown.is_set():
         if not _connected:
             _logger.warning(f"Broker disconnected, reconnecting in {backoff}s", extra={"subsystem": "mqtt"})
-            time.sleep(backoff)
+            _shutdown.wait(backoff)
             backoff = min(backoff * 2, 60)
             try:
                 client.reconnect()
@@ -226,7 +226,7 @@ def main():
         ups_data = get_ups_data()
         if not ups_data:
             _logger.warning("No UPS data available, retrying...", extra={"subsystem": "sensor"})
-            time.sleep(SAMPLE_RATE_OFFLINE)
+            _shutdown.wait(SAMPLE_RATE_OFFLINE)
             continue
 
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -234,7 +234,7 @@ def main():
         publish_ups_status(client, ups_data, ts)
 
         sample_rate = SAMPLE_RATE_ONLINE if is_ups_online(ups_data) else SAMPLE_RATE_OFFLINE
-        time.sleep(sample_rate)
+        _shutdown.wait(sample_rate)
 
     # Graceful shutdown sequence
     _logger.info("Shutting down gracefully", extra={"subsystem": "shutdown"})
