@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/ -v --co)",
+      "Bash(python -c \"import ups_mqtt\")"
+    ]
+  }
+}

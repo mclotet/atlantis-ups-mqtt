@@ -10,7 +10,7 @@ COPY libs/atlantis-core/python /tmp/atlantis-core
 RUN pip install --no-cache-dir "/tmp/atlantis-core[mqtt]"
 
 # Copy the service script
-COPY ups-mqtt.py /app/ups-mqtt.py
+COPY ups_mqtt.py /app/ups_mqtt.py
 WORKDIR /app
 
-CMD ["python", "ups-mqtt.py"]
+CMD ["python", "ups_mqtt.py"]
