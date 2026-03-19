@@ -10,12 +10,12 @@ import paho.mqtt.client as mqtt
 
 from atlantis_core import (
     AtlantisLogger,
+    build,
     build_availability_offline,
     build_availability_online,
     build_availability_topic,
     build_telemetry,
     build_telemetry_topic,
-    build_state_topic,
 )
 
 # ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ FW_VERSION = os.getenv("FW_VERSION", "1.0.0")
 # ---------------------------------------------------------------------------
 
 battery_topic = build_telemetry_topic(ATL_GROUP_ID, ATL_EDGE_NODE_ID, ATL_DEVICE_ID, "battery")
-ups_status_topic = build_state_topic(ATL_GROUP_ID, ATL_EDGE_NODE_ID, ATL_DEVICE_ID, "ups")
+ups_status_topic = build(ATL_GROUP_ID, "state", ATL_EDGE_NODE_ID, ATL_DEVICE_ID, "ups", "status")
 avail_topic = build_availability_topic(ATL_GROUP_ID, ATL_EDGE_NODE_ID, ATL_DEVICE_ID)
 
 # ---------------------------------------------------------------------------
