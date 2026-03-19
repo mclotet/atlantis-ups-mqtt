@@ -1,0 +1,3 @@
+[submodule "libs/atlantis-core"]
+	path = libs/atlantis-core
+	url = https://github.com/mclotet/atlantis-core.git

@@ -31,9 +31,16 @@ services:
       - UPS_PORT=${UPS_PORT}
       - MQTT_HOST=${MQTT_HOST}
       - MQTT_PORT=${MQTT_PORT}
-      - MQTT_TOPIC=${MQTT_TOPIC}
       - SAMPLE_RATE_ONLINE=${SAMPLE_RATE_ONLINE}
       - SAMPLE_RATE_OFFLINE=${SAMPLE_RATE_OFFLINE}
+      - ATL_GROUP_ID=${ATL_GROUP_ID:-global}
+      - ATL_EDGE_NODE_ID=${ATL_EDGE_NODE_ID:-rack}
+      - ATL_DEVICE_ID=${ATL_DEVICE_ID:-raspberrypi5}
+      - ATL_SERVICE_NAME=${ATL_SERVICE_NAME:-ups-mqtt}
+      - ATL_ENV=${ATL_ENV:-production}
+      - ATL_LOG_LEVEL=${ATL_LOG_LEVEL:-INFO}
+      - ATL_MQTT_LOG_MAX_PER_MINUTE=${ATL_MQTT_LOG_MAX_PER_MINUTE:-300}
+      - FW_VERSION=${FW_VERSION:-1.0.0}
     depends_on:
       - nut-upsd
 

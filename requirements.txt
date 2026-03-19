@@ -1,1 +1,2 @@
-paho-mqtt==1.5.1
+# atlantis-core is installed directly from the git submodule in the Dockerfile.
+# See: libs/atlantis-core/python[mqtt]  (provides paho-mqtt>=2.0)

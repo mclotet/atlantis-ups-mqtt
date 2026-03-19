@@ -1,18 +1,16 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y \
-    nut-client \
-    && rm -rf /var/lib/apt/lists/*
+    apt-get install -y nut-client && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
-COPY requirements.txt /tmp/
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# Install atlantis-core Python library from the submodule
+COPY libs/atlantis-core/python /tmp/atlantis-core
+RUN pip install --no-cache-dir "/tmp/atlantis-core[mqtt]"
 
-# Copy the Python script
+# Copy the service script
 COPY ups-mqtt.py /app/ups-mqtt.py
 WORKDIR /app
 
-# Start the script
 CMD ["python", "ups-mqtt.py"]
