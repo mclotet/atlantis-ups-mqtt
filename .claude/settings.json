@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(python -m pytest tests/ -v --co)",
-      "Bash(python -c \"import ups_mqtt\")"
+      "Bash(python -c \"import ups_mqtt\")",
+      "mcp__plane__update_work_item",
+      "mcp__plane__retrieve_work_item_by_identifier",
+      "Bash(pip show:*)",
+      "Bash(python -c \"from atlantis_core import AtlantisLogger, build, now_iso, ts_from_unix; print\\(''imports OK''\\)\")"
     ]
   }
 }
