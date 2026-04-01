@@ -1,10 +1,12 @@
 import json
 import os
 import signal
+import socket
 import subprocess
 import sys
 import threading
 import time
+import uuid
 from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
@@ -57,6 +59,23 @@ _logger = None  # set after MQTT client is ready
 
 
 # ---------------------------------------------------------------------------
+# Network helpers
+# ---------------------------------------------------------------------------
+
+def _get_network_info() -> tuple[str, str]:
+    """Return (ip, mac) for the default outbound interface."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        ip = "0.0.0.0"
+    mac = hex(uuid.getnode())[2:].zfill(12)
+    return ip, mac
+
+
+# ---------------------------------------------------------------------------
 # MQTT callbacks
 # ---------------------------------------------------------------------------
 
@@ -65,7 +84,8 @@ def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
         _connected = True
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        birth = build_availability_online(ts)
+        ip, mac = _get_network_info()
+        birth = build_availability_online(ts, ip=ip, fw=FW_VERSION, mac=mac, spec="1.18")
         client.publish(avail_topic, birth, qos=1, retain=True)
         if _logger:
             _logger.info("Connected to MQTT broker", extra={"subsystem": "mqtt"})
