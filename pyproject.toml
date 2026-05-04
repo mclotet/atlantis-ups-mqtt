@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "atlantis-ups-mqtt"
+version = "0.1.0"
+description = "UPS status and battery telemetry to MQTT publisher for the Atlantis ecosystem"
+requires-python = ">=3.12"
+dependencies = []  # requirements.txt remains authoritative for Docker builds
