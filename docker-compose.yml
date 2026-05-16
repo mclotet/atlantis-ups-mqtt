@@ -41,6 +41,8 @@ services:
       - ATL_LOG_LEVEL=${ATL_LOG_LEVEL:-INFO}
       - ATL_MQTT_LOG_MAX_PER_MINUTE=${ATL_MQTT_LOG_MAX_PER_MINUTE:-300}
       - FW_VERSION=${FW_VERSION:-1.0.0}
+      - ATLANTIS_EDGE_NODE_ID=${ATL_EDGE_NODE_ID:-rack}
+      - LOG_FORMAT=json
     depends_on:
       - nut-upsd
 

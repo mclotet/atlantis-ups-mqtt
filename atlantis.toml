@@ -1,0 +1,9 @@
+# Deployment defaults for atlantis-ups-mqtt.
+# Override any value with an environment variable (e.g. ATL_LOG_LEVEL=DEBUG).
+# Secrets (ups_name, ups_host, mqtt_host, etc.) must be supplied via env / .env.
+
+atl_service_name = "ups-mqtt"
+atl_device_id    = "raspberrypi5"
+atl_group_id     = "global"
+atl_env          = "pro"
+atl_log_level    = "WARNING"

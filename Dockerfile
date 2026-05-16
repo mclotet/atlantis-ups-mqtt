@@ -7,10 +7,11 @@ RUN apt-get update && \
 
 # Install atlantis-core Python library from the submodule
 COPY libs/atlantis-core/python /tmp/atlantis-core
-RUN pip install --no-cache-dir "/tmp/atlantis-core[mqtt]"
+RUN pip install --no-cache-dir "/tmp/atlantis-core[mqtt,config]"
 
-# Copy the service script
-COPY ups_mqtt.py /app/ups_mqtt.py
+# Copy the service package and entry point
+COPY ups_mqtt/ /app/ups_mqtt/
+COPY main.py atlantis.toml /app/
 WORKDIR /app
 
-CMD ["python", "ups_mqtt.py"]
+CMD ["python", "main.py"]
