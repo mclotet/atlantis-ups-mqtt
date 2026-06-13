@@ -1,0 +1,69 @@
+# =============================================================================
+# Woodpecker CI — atlantis-ups-mqtt (the service's OWN repo) — PRO instance
+#
+# CI ONLY: build + test the service where its code lives. Deployment into the
+# live stack is handled separately by atlantis-controller's pipeline (CD), since
+# that needs the stack compose file + submodule pointer. This file is selected
+# by the PRO Woodpecker instance via Project Settings -> pipeline path.
+# (.woodpecker/itg.yml is the identical ITG counterpart; CI is env-agnostic, the
+# split is kept only for model uniformity across all repos.)
+#
+# Triggers: push (CI feedback where the code lives) + cron + manual.
+# =============================================================================
+
+when:
+  - event: [push, cron, manual]
+
+# The DEFAULT clone recurses submodules with the repo-scoped OAuth token, which
+# CANNOT read the cross-repo private atlantis-core submodule — it aborts the
+# whole run before any step executes. So override the clone to NOT recurse, then
+# fetch the submodule ourselves (next step) with a PAT that can read atlantis-core.
+clone:
+  - name: git
+    image: woodpeckerci/plugin-git
+    settings:
+      recursive: false
+
+steps:
+  # Plain alpine (shell entrypoint) + apk git — avoids alpine/git's `git`
+  # entrypoint, which would need an entrypoint override that breaks Woodpecker's
+  # command injection (/bin/sh: -c requires an argument).
+  submodules:
+    image: alpine:3.20
+    environment:
+      SUBMODULE_TOKEN:
+        from_secret: submodule_token   # read-only PAT with access to atlantis-core
+    commands:
+      - apk add --no-cache git
+      - |
+        if [ -z "$${SUBMODULE_TOKEN}" ]; then
+          echo "ERROR: submodule_token secret is empty/unset — create it in Woodpecker"
+          echo "       (repo or org secret 'submodule_token', events push+cron+manual)."
+          exit 1
+        fi
+      - echo "submodule_token present (len:$${#SUBMODULE_TOKEN})"
+      - git config --global url."https://x-access-token:$${SUBMODULE_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - git submodule update --init --recursive
+      - echo "submodule fetched OK"
+
+  # Unit tests. ups-mqtt imports atlantis_core from the libs/atlantis-core
+  # submodule (now present), installed first with the same extras as the
+  # Dockerfile ([mqtt,config]), then ups-mqtt's own dev/test extras.
+  test:
+    image: python:3.12-slim
+    commands:
+      - pip install --quiet --no-cache-dir "./libs/atlantis-core/python[mqtt,config]"
+      - pip install --quiet --no-cache-dir .[dev]
+      # Scope to ups-mqtt's OWN tests — bare pytest also collects the vendored
+      # atlantis-core submodule's tests (libs/atlantis-core/python/tests), whose
+      # module names collide with ups-mqtt's tests/ ("import file mismatch").
+      - pytest -q tests
+
+  # Confirm the production image still builds (catches Dockerfile/dep breakage).
+  # The Dockerfile COPYs libs/atlantis-core/python (present from the step above).
+  build:
+    image: docker:27-cli
+    commands:
+      - docker build -t atlantis-ups-mqtt:ci .
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
