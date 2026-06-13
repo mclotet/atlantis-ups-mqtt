@@ -53,7 +53,12 @@ steps:
     image: python:3.12-slim
     commands:
       - pip install --quiet --no-cache-dir "./libs/atlantis-core/python[mqtt,config]"
-      - pip install --quiet --no-cache-dir .[dev]
+      # Install the dev/test deps directly rather than building the ups-mqtt
+      # package: the repo is a flat module (ups_mqtt.py + main.py), not a
+      # packaged project, and conftest.py adds the repo root to sys.path so the
+      # tests import ups_mqtt without an install. (Matches how the Dockerfile
+      # treats it — it copies the .py files, it never pip-installs the project.)
+      - pip install --quiet --no-cache-dir "pydantic-settings[toml]>=2.0" "pytest>=8"
       # Scope to ups-mqtt's OWN tests — bare pytest also collects the vendored
       # atlantis-core submodule's tests (libs/atlantis-core/python/tests), whose
       # module names collide with ups-mqtt's tests/ ("import file mismatch").
