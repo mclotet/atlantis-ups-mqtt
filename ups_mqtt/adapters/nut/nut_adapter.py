@@ -50,6 +50,11 @@ class NutAdapter(IUpsPort):
             battery = BatteryMetrics(
                 charge=float(data["battery.charge"]),
                 charge_low=float(data["battery.charge.low"]),
+                # LIMITATION: battery.runtime reports 0 s when the battery is new or
+                # recently replaced and the UPS firmware has not yet produced an estimate.
+                # Fix: run a runtime calibration cycle via `upsrw` or the APC management
+                # interface; the firmware will report a valid value after the calibration
+                # discharge/recharge completes.
                 runtime=float(data["battery.runtime"]),
                 runtime_low=float(data["battery.runtime.low"]),
                 voltage=float(data["battery.voltage"]),
@@ -60,6 +65,12 @@ class NutAdapter(IUpsPort):
 
         return UpsReading(
             status=data.get("ups.status", ""),
+            # LIMITATION: ups.load is not exposed over USB HID by the usbhid-ups driver
+            # for the APC Smart-UPS 750, so this always falls back to 0.
+            # Workaround A: switch to the apcsmart driver via the RJ45 serial port
+            #   (requires APC RJ45-to-DB9 cable + USB-to-serial adapter).
+            # Workaround B: derive load from a Shelly Pro EM50 clamp on the output
+            #   circuit: load_pct = (act_power_W / 500) * 100 (rated ~500 W).
             load=_safe_float(data.get("ups.load", "0")),
             beeper_status=data.get("ups.beeper.status", ""),
             delay_shutdown=_safe_float(data.get("ups.delay.shutdown", "0")),

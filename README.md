@@ -53,6 +53,24 @@ The NUT password is passed via a Docker secret file rather than a plain environm
 | --- | --- | --- |
 | `nut-upsd-password` | `.nut/nut-upsd-password` | NUT daemon password |
 
+## Known limitations
+
+These limitations apply to the APC Smart-UPS 750 running under the NUT `usbhid-ups` (USB HID) driver.
+
+### `ups.load` always reports 0%
+
+The `usbhid-ups` driver does not expose `ups.load` for this model over USB HID. The Grafana Load panel will always show 0%.
+
+**Workaround A — serial port (apcsmart driver):** The Smart-UPS 750 has an RJ45 serial management port. The NUT `apcsmart` driver communicates over APC's proprietary serial protocol and does expose `ups.load`. This requires an APC RJ45-to-DB9 cable, a USB-to-serial adapter on the host, and a second NUT driver instance (or replacing the USB one).
+
+**Workaround B — derive from Shelly EM:** If a Shelly Pro EM50 clamp monitors the UPS output circuit, load can be approximated as `(act_power_W / 500) * 100` (Smart-UPS 750 rated ~500 W). No new hardware is needed — a Grafana Flux query or a Telegraf processor is sufficient.
+
+### `battery.runtime` reports 0 seconds
+
+The UPS firmware has not produced a runtime estimate. This occurs when the battery is new or recently replaced and has not yet been calibrated.
+
+**Fix:** Run a runtime calibration cycle via `upsrw` or the APC management interface. Once the UPS has discharged and recharged through the calibration cycle, the firmware reports a valid estimate and the panel updates automatically.
+
 ## Deployment via atlantis-controller
 
 When deployed as part of [atlantis-controller](https://github.com/mclotet/atlantis-controller), this service is built and managed by the controller's `docker-compose.yml`. The service's own `.env.example` and `docker-compose.yml` are for standalone use only.
