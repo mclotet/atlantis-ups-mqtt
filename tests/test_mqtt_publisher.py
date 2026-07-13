@@ -121,12 +121,12 @@ def test_publish_status_payload_contains_all_fields():
     assert data["timestamp"]      == TS
 
 
-def test_publish_status_uses_qos_1_retain():
+def test_publish_status_uses_qos_0_retain():
     client = MagicMock()
     pub = MqttPublisher(client, TOPICS)
     pub.publish_status(FULL_READING, TS)
     kwargs = client.publish.call_args[1]
-    assert kwargs["qos"]    == 1
+    assert kwargs["qos"]    == 0
     assert kwargs["retain"] is True
 
 

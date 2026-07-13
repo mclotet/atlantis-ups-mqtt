@@ -51,5 +51,5 @@ class MqttPublisher:
             "timestamp":      ts,
         }
         payload = json.dumps(state)
-        self._client.publish(self._topics.status, payload, qos=1, retain=True)
+        self._client.publish(self._topics.status, payload, qos=0, retain=True)
         logger.info(f"Published UPS status: {payload}", extra={"subsystem": "mqtt"})

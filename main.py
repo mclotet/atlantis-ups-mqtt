@@ -59,7 +59,7 @@ def _make_on_connect(avail_topic: str, fw_version: str):
             ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             ip, mac = _get_network_info()
             birth = build_availability_online(ts, ip=ip, fw=fw_version, mac=mac, spec="1.18")
-            client.publish(avail_topic, birth, qos=1, retain=True)
+            client.publish(avail_topic, birth, qos=0, retain=True)
             if _logger:
                 _logger.info("Connected to MQTT broker", extra={"subsystem": "mqtt"})
         else:
@@ -126,6 +126,10 @@ def main() -> None:
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.on_connect = _make_on_connect(avail_topic, fw_version)
     client.on_disconnect = _make_on_disconnect()
+    # qos=1 here is intentional (CORE-050): this is LWT registration, not a
+    # runtime publish. paho-mqtt implements it correctly, and it costs nothing
+    # extra — the broker delivers it once, on disconnect. See
+    # docs/standards/mqtt.md §3.2.2.
     client.will_set(avail_topic, build_availability_offline(), qos=1, retain=True)
 
     # Initial broker connection with exponential backoff
@@ -190,7 +194,7 @@ def main() -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     import json
     offline_payload = json.dumps({"status": "offline", "reason": "graceful_shutdown", "timestamp": ts})
-    client.publish(avail_topic, offline_payload, qos=1, retain=True)
+    client.publish(avail_topic, offline_payload, qos=0, retain=True)
     time.sleep(0.5)
     client.loop_stop()
     client.disconnect()
