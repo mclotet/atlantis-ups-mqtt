@@ -19,10 +19,9 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 - `ATLANTIS_EDGE_NODE_ID` and `LOG_FORMAT=json` env vars in `docker-compose.yml` (required by CORE-023/024)
 
 ### Changed
-- Bumped `libs/atlantis-core` submodule from `af757e4` to `929aa84` (CORE-022 through CORE-024)
-  - CORE-023: `MqttLogHandler` — camelCase keys, `uptime` as int, `edge_node.id` from `ATLANTIS_EDGE_NODE_ID`
-  - CORE-024: `OtelJsonFormatter` — stdout always Format B; `LOG_FORMAT` env var; `timestampNs` field added
-- Dockerfile updated: copies `ups_mqtt/` package + `main.py` + `atlantis.toml`; installs `atlantis-core[mqtt,config]`
+- (CTRL-024) Bumped `libs/atlantis-core` submodule from `929aa84` to `bdc19e2` (CORE-048 through CORE-059), re-pinning past the CORE-048 Python/C++ MQTT builder alignment (`%.6g` telemetry number formatting) and the CORE-052 unsynced-timestamp fix; `pytest -q tests` passes 37/37 post-repin
+  - Reviewed `test_mqtt_publisher.py`'s battery telemetry assertions against the `%.6g` formatting change: values still reflect real APC Smart-UPS 750 (`usbhid-ups`) precision, no truncation at the magnitudes this device reports
+- Bumped reported MQTT `spec` in `main.py` from `1.29` to `1.30` (CORE-052 through CORE-059 fan-out, per MQTT Standard §1.6.1)
 
 ---
 

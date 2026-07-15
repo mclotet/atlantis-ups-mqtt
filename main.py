@@ -58,7 +58,7 @@ def _make_on_connect(avail_topic: str, fw_version: str):
             _connected = True
             ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             ip, mac = _get_network_info()
-            birth = build_availability_online(ts, ip=ip, fw=fw_version, mac=mac, spec="1.29")
+            birth = build_availability_online(ts, ip=ip, fw=fw_version, mac=mac, spec="1.30")
             client.publish(avail_topic, birth, qos=0, retain=True)
             if _logger:
                 _logger.info("Connected to MQTT broker", extra={"subsystem": "mqtt"})
