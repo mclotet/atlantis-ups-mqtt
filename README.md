@@ -4,6 +4,17 @@ Polls a NUT (Network UPS Tools) daemon and publishes UPS telemetry to an MQTT br
 
 The standalone `docker-compose.yml` includes both `nut-upsd` and `ups-mqtt` since they are tightly coupled — `nut-upsd` talks to the UPS over USB and exposes a NUT server; `ups-mqtt` queries it and forwards metrics to MQTT.
 
+## Architecture
+
+```text
+APC Smart-UPS 750 (USB)
+    → nut-upsd (usbhid-ups driver, NUT server)
+        → ups-mqtt (polls NUT protocol on SAMPLE_RATE_ONLINE/OFFLINE interval)
+            → MQTT broker (battery/telemetry, ups/status)
+```
+
+`ups-mqtt` holds no state of its own between polls — each cycle queries `nut-upsd` fresh and republishes. Built on `atlantis-core` (git submodule) for `BaseServiceSettings` configuration and `AtlantisLogger` structured logging.
+
 ## Standalone usage
 
 Requires a physical UPS connected via USB and an MQTT broker reachable at `MQTT_HOST`.
