@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from atlantis_core import build_telemetry
+from atlantis_core import build_telemetry, effective_retain
 
 if TYPE_CHECKING:
     from ups_mqtt.domain.models import UpsReading
@@ -39,7 +39,10 @@ class MqttPublisher:
             "voltage_nominal": b.voltage_nominal,
         }
         payload = build_telemetry(values, ts)
-        self._client.publish(self._topics.battery, payload, qos=0, retain=False)
+        self._client.publish(
+            self._topics.battery, payload, qos=0,
+            retain=effective_retain(self._topics.battery),
+        )
         logger.info(f"Published battery telemetry: {payload}", extra={"subsystem": "mqtt"})
 
     def publish_status(self, reading: UpsReading, ts: str) -> None:
@@ -51,5 +54,8 @@ class MqttPublisher:
             "timestamp":      ts,
         }
         payload = json.dumps(state)
-        self._client.publish(self._topics.status, payload, qos=0, retain=True)
+        self._client.publish(
+            self._topics.status, payload, qos=0,
+            retain=effective_retain(self._topics.status),
+        )
         logger.info(f"Published UPS status: {payload}", extra={"subsystem": "mqtt"})

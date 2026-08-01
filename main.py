@@ -15,6 +15,7 @@ from atlantis_core import (
     build_availability_online,
     build_availability_topic,
     build_telemetry_topic,
+    effective_retain,
 )
 
 from ups_mqtt.adapters.mqtt.mqtt_publisher import MqttPublisher, Topics
@@ -59,7 +60,7 @@ def _make_on_connect(avail_topic: str, fw_version: str):
             ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             ip, mac = _get_network_info()
             birth = build_availability_online(ts, ip=ip, fw=fw_version, mac=mac, spec="1.30")
-            client.publish(avail_topic, birth, qos=0, retain=True)
+            client.publish(avail_topic, birth, qos=0, retain=effective_retain(avail_topic))
             if _logger:
                 _logger.info("Connected to MQTT broker", extra={"subsystem": "mqtt"})
         else:
@@ -130,7 +131,10 @@ def main() -> None:
     # runtime publish. paho-mqtt implements it correctly, and it costs nothing
     # extra — the broker delivers it once, on disconnect. See
     # docs/standards/mqtt.md §3.2.2.
-    client.will_set(avail_topic, build_availability_offline(), qos=1, retain=True)
+    client.will_set(
+        avail_topic, build_availability_offline(), qos=1,
+        retain=effective_retain(avail_topic),
+    )
 
     # Initial broker connection with exponential backoff
     backoff = 1
@@ -194,7 +198,7 @@ def main() -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     import json
     offline_payload = json.dumps({"status": "offline", "reason": "graceful_shutdown", "timestamp": ts})
-    client.publish(avail_topic, offline_payload, qos=0, retain=True)
+    client.publish(avail_topic, offline_payload, qos=0, retain=effective_retain(avail_topic))
     time.sleep(0.5)
     client.loop_stop()
     client.disconnect()
