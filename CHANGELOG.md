@@ -19,6 +19,7 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 - `ATLANTIS_EDGE_NODE_ID` and `LOG_FORMAT=json` env vars in `docker-compose.yml` (required by CORE-023/024)
 
 ### Changed
+- (CTRL-032) Bumped `libs/atlantis-core` submodule from `bdc19e2` to `32c4425` (CORE-064 through CORE-074: WiFi PSK rotation, WiFi NVS host-side provisioning + Infisical secret-sync, HTTPS transport, configurable MQTT buffer size, retirement of a dead WiFi password macro): all 24 pulled-in commits are ESP32/C++-side or additive Python provisioning tooling (new `atlantis_core.provisioning` module, `provisioning` optional-extra, `Dockerfile`) behind a new `[project.scripts]` entry point — `config.py`, `mqtt_payload.py`, `mqtt_topics.py`, `logging/`, `health/`, and `defaults.toml` (the `[mqtt,config]` extras this service actually installs) are byte-for-byte unchanged; `pytest -q` passes 37/37 post-repin
 - (CTRL-024) Bumped `libs/atlantis-core` submodule from `929aa84` to `bdc19e2` (CORE-048 through CORE-059), re-pinning past the CORE-048 Python/C++ MQTT builder alignment (`%.6g` telemetry number formatting) and the CORE-052 unsynced-timestamp fix; `pytest -q tests` passes 37/37 post-repin
   - Reviewed `test_mqtt_publisher.py`'s battery telemetry assertions against the `%.6g` formatting change: values still reflect real APC Smart-UPS 750 (`usbhid-ups`) precision, no truncation at the magnitudes this device reports
 - Bumped reported MQTT `spec` in `main.py` from `1.29` to `1.30` (CORE-052 through CORE-059 fan-out, per MQTT Standard §1.6.1)
