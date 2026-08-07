@@ -2,8 +2,9 @@ from atlantis_core.config import BaseServiceSettings
 
 
 class Settings(BaseServiceSettings):
-    # Atlantis identity — edge_node_id is separate from group_id in topic construction
-    atl_edge_node_id: str = "rack"
+    # Service-local field (not part of BaseServiceSettings) — deliberately not atl_*
+    # prefixed; separate from group_id, used to build MQTT topics
+    mqtt_edge_node_id: str = "rack"
 
     # NUT connection
     ups_name: str

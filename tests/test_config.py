@@ -7,7 +7,7 @@ def test_settings_loads_from_toml_and_env(tmp_path, monkeypatch):
         'atl_service_name = "ups-mqtt"\n'
         'atl_device_id    = "raspberrypi5"\n'
         'atl_group_id     = "global"\n'
-        'atl_edge_node_id = "rack"\n'
+        'mqtt_edge_node_id = "rack"\n'
         'atl_env          = "pro"\n'
         'atl_log_level    = "WARNING"\n'
         'ups_name         = "ups"\n'
@@ -19,7 +19,7 @@ def test_settings_loads_from_toml_and_env(tmp_path, monkeypatch):
     assert s.atl_service_name == "ups-mqtt"
     assert s.atl_device_id    == "raspberrypi5"
     assert s.atl_group_id     == "global"
-    assert s.atl_edge_node_id == "rack"
+    assert s.mqtt_edge_node_id == "rack"
     assert s.ups_name         == "ups"
     assert s.ups_host         == "nut-upsd"
     assert s.mqtt_host        == "broker"

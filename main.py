@@ -102,7 +102,7 @@ def main() -> None:
     settings = get_settings()
 
     group = settings.atl_group_id
-    edge_node = settings.atl_edge_node_id
+    edge_node = settings.mqtt_edge_node_id
     device = settings.atl_device_id
     fw_version = settings.fw_version
 

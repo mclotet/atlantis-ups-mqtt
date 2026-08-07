@@ -48,7 +48,7 @@ These are the variables the service itself reads at runtime (as defined in `.env
 | `NUT_PASSWORD` | NUT authentication password | — |
 | `UPS_USB_PATH` | Host USB device path for the UPS | `/dev/bus/usb/003` |
 | `ATL_GROUP_ID` | Physical/logical location used in MQTT topic paths | `global` |
-| `ATL_EDGE_NODE_ID` | Logical subsystem type (e.g. `rack`) | `rack` |
+| `MQTT_EDGE_NODE_ID` | Logical subsystem type (e.g. `rack`); service-local, not an `ATL_*` platform field | `rack` |
 | `ATL_DEVICE_ID` | Unique identifier of the host running this service | `raspberrypi5` |
 | `ATL_SERVICE_NAME` | Service name used in structured log resource attributes | `ups-mqtt` |
 | `ATL_ENV` | Logging format: `development` = human-readable, `production` = OTel JSON | `production` |
@@ -100,7 +100,7 @@ The controller's `.env` uses prefixed variable names (`ATL_UPS_*`) to avoid coll
 | `UPS_SAMPLE_RATE_ONLINE` | `SAMPLE_RATE_ONLINE` |
 | `UPS_SAMPLE_RATE_OFFLINE` | `SAMPLE_RATE_OFFLINE` |
 | `ATL_UPS_GROUP_ID` | `ATL_GROUP_ID` |
-| `ATL_UPS_EDGE_NODE_ID` | `ATL_EDGE_NODE_ID` |
+| `ATL_UPS_EDGE_NODE_ID` | `MQTT_EDGE_NODE_ID` |
 | `ATL_UPS_DEVICE_ID` | `ATL_DEVICE_ID` |
 | `ATL_UPS_SERVICE_NAME` | `ATL_SERVICE_NAME` |
 | `ATL_UPS_ENV` | `ATL_ENV` |
