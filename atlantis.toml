@@ -3,7 +3,9 @@
 # Secrets (ups_name, ups_host, mqtt_host, etc.) must be supplied via env / .env.
 
 atl_service_name = "ups-mqtt"
-atl_device_id    = "raspberrypi5"
+# This BRIDGE PROCESS's own identity (identity.md §2.2) — not the UPS's.
+# The bridged UPS itself is ups_device_id, supplied via env (no safe default).
+atl_device_id    = "ups-mqtt"
 atl_group_id     = "global"
 atl_env          = "pro"
 atl_log_level    = "WARNING"

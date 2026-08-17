@@ -20,8 +20,15 @@ from atlantis_core import (
 
 from ups_mqtt.adapters.mqtt.mqtt_publisher import MqttPublisher, Topics
 from ups_mqtt.adapters.nut.nut_adapter import NutAdapter
-from ups_mqtt.application.ups_service import poll_and_publish
+from ups_mqtt.application.ups_service import poll_and_publish, publish_ups_availability
 from ups_mqtt.config import get_settings
+
+# Container/service subjects are always group=global/edge_node=infra
+# (identity.md §5) — this is this BRIDGE PROCESS's own mission, a governed
+# constant rather than a per-deployment choice, and is deliberately distinct
+# from settings.mqtt_edge_node_id, which is the bridged UPS's own mission
+# ("power"). See mqtt.md D13 for the two resulting availability topics.
+BRIDGE_EDGE_NODE_ID = "infra"
 
 # ---------------------------------------------------------------------------
 # State shared between callbacks and main loop
@@ -102,15 +109,19 @@ def main() -> None:
     settings = get_settings()
 
     group = settings.atl_group_id
-    edge_node = settings.mqtt_edge_node_id
-    device = settings.atl_device_id
+    edge_node = settings.mqtt_edge_node_id      # the bridged UPS's mission (e.g. "power")
+    device = settings.atl_device_id             # this BRIDGE PROCESS's own identity (e.g. "ups-mqtt")
+    ups_device = settings.ups_device_id         # the bridged UPS's own identity (e.g. "apc-smartups750")
     fw_version = settings.fw_version
 
-    # Pre-build topics
+    # Pre-build topics. battery/status/ups_availability describe the UPS
+    # itself (identity.md §2.2); availability describes this bridge process
+    # (PLAT-244) — note the different edge_node_id between the two.
     topics = Topics(
-        battery=build_telemetry_topic(group, edge_node, device, "battery"),
-        status=build(group, "state", edge_node, device, "ups", "status"),
-        availability=build_availability_topic(group, edge_node, device),
+        battery=build_telemetry_topic(group, edge_node, ups_device, "battery"),
+        status=build(group, "state", edge_node, ups_device, "ups", "status"),
+        availability=build_availability_topic(group, BRIDGE_EDGE_NODE_ID, device),
+        ups_availability=build_availability_topic(group, edge_node, ups_device),
     )
 
     avail_topic = topics.availability
@@ -186,6 +197,11 @@ def main() -> None:
 
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         reading = poll_and_publish(port, publisher, _logger, ts)
+
+        # The UPS's own availability (PLAT-244) — not LWT-backed, so it must
+        # be driven explicitly from each poll's outcome (mqtt.md D13).
+        ip, mac = _get_network_info()
+        publish_ups_availability(reading, publisher, ts, ip=ip, fw_version=fw_version, mac=mac)
 
         if reading is None:
             _shutdown.wait(settings.sample_rate_offline)
