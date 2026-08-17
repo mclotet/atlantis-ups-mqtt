@@ -9,6 +9,13 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 ## [Unreleased]
 
 ### Added
+- (PLAT-244) `Settings.ups_device_id` — the bridged APC Smart-UPS 750's own identity (identity.md §2.2), split out from `atl_device_id`, which now names only this bridge *process*. `UPS_DEVICE_ID` builds the `battery`/`status` topics; `ATL_DEVICE_ID` stays the identity used for structured logging and the bridge's own availability/LWT
+- (PLAT-244) `Topics.ups_availability` and `MqttPublisher.publish_ups_online()`/`publish_ups_offline()` — a second availability topic (`atlantis/global/availability/power/apc-smartups750/node/status`) reporting the UPS's own reachability via NUT, distinct from the bridge process's LWT-backed one (`.../infra/ups-mqtt/...`). NOT LWT-backed: the UPS has no MQTT connection of its own for an LWT to describe, so `ups_service.publish_ups_availability()` drives it from every poll's outcome, publishing `reason: "nut_unreachable"` when `upsc` stops answering
+- `main.BRIDGE_EDGE_NODE_ID = "infra"` — this bridge process's own mission (identity.md §5: containers are always `global`/`infra`), distinct from `mqtt_edge_node_id` (now the *UPS's* mission, `"power"`)
+
+### Changed
+- (PLAT-244) `atlantis.toml`'s `atl_device_id` default: `raspberrypi5` -> `ups-mqtt`. The UPS is no longer identified by the bridge host (identity.md §1.3's `global/rack/raspberrypi5` double-claim) — it is `apc-smartups750`, supplied via the new `ups_device_id` setting (no default; must be set explicitly)
+- (PLAT-244) `mqtt_edge_node_id` default: `"rack"` -> `"power"` (identity.md §3.2 — `rack` is retired)
 - Hexagonal (ports-and-adapters) architecture: `ups_mqtt/` package with `domain/`, `ports/`, `application/`, `adapters/` layers
 - `NutAdapter(IUpsPort)` — subprocess adapter for `upsc`, raises typed domain exceptions (`NutUnavailable`, `NutParseError`)
 - `MqttPublisher` — encapsulates paho client and topic strings; skips battery publish gracefully when metrics unavailable

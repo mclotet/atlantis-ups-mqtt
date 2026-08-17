@@ -29,3 +29,31 @@ def poll_and_publish(
     publisher.publish_battery(reading, ts)
     publisher.publish_status(reading, ts)
     return reading
+
+
+def publish_ups_availability(
+    reading: UpsReading | None,
+    publisher: object,
+    ts: str,
+    ip: str,
+    fw_version: str,
+    mac: str,
+) -> None:
+    """Publish the bridged UPS's own availability topic (identity.md §2.2, PLAT-244).
+
+    Unlike the bridge PROCESS's own availability (LWT-backed — mqtt.md
+    §3.2.2), this topic has no MQTT connection to describe: it reports NUT
+    reachability instead, so it is an ordinary retained publish driven by
+    each poll cycle (mqtt.md D13) rather than a connect-time birth message.
+    Called every cycle — including on failure — so the retained topic
+    self-heals the same way `state` topics do (mqtt.md §5.1): the bridge
+    must explicitly publish offline when NUT stops answering, since nothing
+    else can.
+
+    `reading` is `poll_and_publish`'s return value: `None` means the most
+    recent `port.read()` raised `UpsDomainError` (NUT unreachable).
+    """
+    if reading is None:
+        publisher.publish_ups_offline(ts)
+    else:
+        publisher.publish_ups_online(ts, ip=ip, fw=fw_version, mac=mac)
