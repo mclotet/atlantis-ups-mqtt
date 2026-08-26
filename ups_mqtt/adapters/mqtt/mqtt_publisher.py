@@ -27,10 +27,16 @@ def _log_publish_result(info: mqtt.MQTTMessageInfo, topic: str, message: str, le
     and .rc is never updated, so checking .rc alone still logs a false
     success. wait_for_publish() blocks until the background thread confirms
     the bytes actually left the socket, making is_published() the real
-    delivery signal.
+    delivery signal. wait_for_publish() itself raises RuntimeError once the
+    disconnect is confirmed rather than just timing out with is_published()
+    still False — caught here and treated the same as a failed publish,
+    since by then .rc has been updated to reflect the real failure.
     """
     if info.rc == mqtt.MQTT_ERR_SUCCESS:
-        info.wait_for_publish(timeout=2.0)
+        try:
+            info.wait_for_publish(timeout=2.0)
+        except RuntimeError:
+            pass
 
     if info.rc == mqtt.MQTT_ERR_SUCCESS and info.is_published():
         logger.log(level, message, extra={"subsystem": "mqtt"})
