@@ -18,12 +18,21 @@ logger = logging.getLogger("atlantis")
 def _log_publish_result(info: mqtt.MQTTMessageInfo, topic: str, message: str, level: int = logging.INFO) -> None:
     """Log what a publish actually did instead of assuming success (PLAT-257).
 
-    For qos=0 (used everywhere in this module), ``client.publish()`` returns
-    synchronously with ``.rc`` reflecting whether the send actually happened —
-    e.g. MQTT_ERR_NO_CONN if the client wasn't connected at that instant — so
-    this must be checked rather than logged blind.
+    For qos=0 under loop_start(), ``client.publish()``'s synchronous ``.rc``
+    only reflects whether the message was *queued* — MQTT_ERR_SUCCESS is
+    returned as soon as it's handed to the background network thread, before
+    that thread has actually written it to the socket. If the socket died in
+    the window between queuing and that write (the exact race a dropped
+    connection creates), the write fails silently in the background thread
+    and .rc is never updated, so checking .rc alone still logs a false
+    success. wait_for_publish() blocks until the background thread confirms
+    the bytes actually left the socket, making is_published() the real
+    delivery signal.
     """
     if info.rc == mqtt.MQTT_ERR_SUCCESS:
+        info.wait_for_publish(timeout=2.0)
+
+    if info.rc == mqtt.MQTT_ERR_SUCCESS and info.is_published():
         logger.log(level, message, extra={"subsystem": "mqtt"})
     else:
         logger.error(
