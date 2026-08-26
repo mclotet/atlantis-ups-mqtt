@@ -5,12 +5,31 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import paho.mqtt.client as mqtt
+
 from atlantis_core import build_availability_online, build_telemetry, effective_retain
 
 if TYPE_CHECKING:
     from ups_mqtt.domain.models import UpsReading
 
 logger = logging.getLogger("atlantis")
+
+
+def _log_publish_result(info: mqtt.MQTTMessageInfo, topic: str, message: str, level: int = logging.INFO) -> None:
+    """Log what a publish actually did instead of assuming success (PLAT-257).
+
+    For qos=0 (used everywhere in this module), ``client.publish()`` returns
+    synchronously with ``.rc`` reflecting whether the send actually happened —
+    e.g. MQTT_ERR_NO_CONN if the client wasn't connected at that instant — so
+    this must be checked rather than logged blind.
+    """
+    if info.rc == mqtt.MQTT_ERR_SUCCESS:
+        logger.log(level, message, extra={"subsystem": "mqtt"})
+    else:
+        logger.error(
+            f"Publish to {topic} did not reach the broker (rc={info.rc!r}): {message}",
+            extra={"subsystem": "mqtt"},
+        )
 
 
 @dataclass(frozen=True)
@@ -40,11 +59,11 @@ class MqttPublisher:
             "voltage_nominal": b.voltage_nominal,
         }
         payload = build_telemetry(values, ts)
-        self._client.publish(
+        info = self._client.publish(
             self._topics.battery, payload, qos=0,
             retain=effective_retain(self._topics.battery),
         )
-        logger.info(f"Published battery telemetry: {payload}", extra={"subsystem": "mqtt"})
+        _log_publish_result(info, self._topics.battery, f"Published battery telemetry: {payload}")
 
     def publish_status(self, reading: UpsReading, ts: str) -> None:
         state = {
@@ -55,11 +74,11 @@ class MqttPublisher:
             "timestamp":      ts,
         }
         payload = json.dumps(state)
-        self._client.publish(
+        info = self._client.publish(
             self._topics.status, payload, qos=0,
             retain=effective_retain(self._topics.status),
         )
-        logger.info(f"Published UPS status: {payload}", extra={"subsystem": "mqtt"})
+        _log_publish_result(info, self._topics.status, f"Published UPS status: {payload}")
 
     def publish_ups_online(self, ts: str, ip: str, fw: str, mac: str) -> None:
         """Publish the bridged UPS's own availability as online (PLAT-244).
@@ -70,11 +89,11 @@ class MqttPublisher:
         poll rather than once at connect time.
         """
         payload = build_availability_online(ts, ip=ip, fw=fw, mac=mac, spec="1.31")
-        self._client.publish(
+        info = self._client.publish(
             self._topics.ups_availability, payload, qos=0,
             retain=effective_retain(self._topics.ups_availability),
         )
-        logger.info(f"Published UPS availability: online ({payload})", extra={"subsystem": "mqtt"})
+        _log_publish_result(info, self._topics.ups_availability, f"Published UPS availability: online ({payload})")
 
     def publish_ups_offline(self, ts: str) -> None:
         """Publish the bridged UPS's own availability as offline (PLAT-244).
@@ -89,8 +108,12 @@ class MqttPublisher:
             {"status": "offline", "reason": "nut_unreachable", "timestamp": ts},
             separators=(",", ":"),
         )
-        self._client.publish(
+        info = self._client.publish(
             self._topics.ups_availability, payload, qos=0,
             retain=effective_retain(self._topics.ups_availability),
         )
-        logger.warning(f"Published UPS availability: offline (NUT unreachable)", extra={"subsystem": "mqtt"})
+        _log_publish_result(
+            info, self._topics.ups_availability,
+            "Published UPS availability: offline (NUT unreachable)",
+            level=logging.WARNING,
+        )

@@ -58,7 +58,7 @@ steps:
       # packaged project, and conftest.py adds the repo root to sys.path so the
       # tests import ups_mqtt without an install. (Matches how the Dockerfile
       # treats it — it copies the .py files, it never pip-installs the project.)
-      - pip install --quiet --no-cache-dir "pydantic-settings[toml]>=2.0" "pytest>=8"
+      - pip install --quiet --no-cache-dir "pydantic-settings[toml]>=2.0" "pytest>=8" "amqtt>=0.11"
       # Scope to ups-mqtt's OWN tests — bare pytest also collects the vendored
       # atlantis-core submodule's tests (libs/atlantis-core/python/tests), whose
       # module names collide with ups-mqtt's tests/ ("import file mismatch").
