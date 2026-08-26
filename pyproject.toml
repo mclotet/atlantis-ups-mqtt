@@ -13,4 +13,7 @@ dependencies = []  # requirements.txt remains authoritative for Docker builds
 dev = [
     "pydantic-settings[toml]>=2.0",
     "pytest>=8",
+    # Real local broker for the PLAT-257 reconnect regression test
+    # (tests/test_mqtt_reconnect_integration.py) — test-only, never shipped.
+    "amqtt>=0.11",
 ]

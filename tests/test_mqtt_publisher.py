@@ -1,6 +1,8 @@
 import json
+import logging
 from unittest.mock import MagicMock
 
+import paho.mqtt.client as mqtt
 import pytest
 
 from ups_mqtt.adapters.mqtt.mqtt_publisher import MqttPublisher, Topics
@@ -204,3 +206,61 @@ def test_ups_availability_topic_distinct_from_bridge_availability_topic():
     # Regression guard for the PLAT-244 split: the UPS's own availability
     # topic must never collapse onto the bridge process's availability topic.
     assert TOPICS.ups_availability != TOPICS.availability
+
+
+# ---------------------------------------------------------------------------
+# Publish result is checked, not assumed (PLAT-257)
+#
+# client.publish() returns synchronously for qos=0 with .rc reflecting whether
+# the send actually happened (MQTT_ERR_NO_CONN if the client wasn't connected
+# at that instant). Before this fix every publish call site logged success
+# unconditionally, which is exactly how a silently-dropped publish looked
+# identical to a delivered one in the logs.
+# ---------------------------------------------------------------------------
+
+def _client_with_rc(rc: mqtt.MQTTErrorCode) -> MagicMock:
+    client = MagicMock()
+    info = MagicMock()
+    info.rc = rc
+    client.publish.return_value = info
+    return client
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda pub: pub.publish_battery(FULL_READING, TS),
+        lambda pub: pub.publish_status(FULL_READING, TS),
+        lambda pub: pub.publish_ups_online(TS, ip="192.168.1.50", fw="1.0.0", mac="c8c9a3d2f040"),
+        lambda pub: pub.publish_ups_offline(TS),
+    ],
+)
+def test_publish_logs_error_when_broker_never_received_it(caplog, call):
+    client = _client_with_rc(mqtt.MQTT_ERR_NO_CONN)
+    pub = MqttPublisher(client, TOPICS)
+
+    with caplog.at_level(logging.ERROR, logger="atlantis"):
+        call(pub)
+
+    assert any(r.levelno >= logging.ERROR for r in caplog.records), (
+        "a publish that didn't reach the broker must not be logged as a success"
+    )
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda pub: pub.publish_battery(FULL_READING, TS),
+        lambda pub: pub.publish_status(FULL_READING, TS),
+        lambda pub: pub.publish_ups_online(TS, ip="192.168.1.50", fw="1.0.0", mac="c8c9a3d2f040"),
+        lambda pub: pub.publish_ups_offline(TS),
+    ],
+)
+def test_publish_logs_no_error_when_broker_received_it(caplog, call):
+    client = _client_with_rc(mqtt.MQTT_ERR_SUCCESS)
+    pub = MqttPublisher(client, TOPICS)
+
+    with caplog.at_level(logging.INFO, logger="atlantis"):
+        call(pub)
+
+    assert not any(r.levelno >= logging.ERROR for r in caplog.records)

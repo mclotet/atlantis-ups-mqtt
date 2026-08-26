@@ -67,9 +67,16 @@ def _make_on_connect(avail_topic: str, fw_version: str):
             ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             ip, mac = _get_network_info()
             birth = build_availability_online(ts, ip=ip, fw=fw_version, mac=mac, spec="1.31")
-            client.publish(avail_topic, birth, qos=0, retain=effective_retain(avail_topic))
+            info = client.publish(avail_topic, birth, qos=0, retain=effective_retain(avail_topic))
             if _logger:
-                _logger.info("Connected to MQTT broker", extra={"subsystem": "mqtt"})
+                if info.rc == mqtt.MQTT_ERR_SUCCESS:
+                    _logger.info("Connected to MQTT broker", extra={"subsystem": "mqtt"})
+                else:
+                    _logger.error(
+                        f"Connected to MQTT broker but birth publish to {avail_topic} "
+                        f"did not reach it (rc={info.rc!r})",
+                        extra={"subsystem": "mqtt"},
+                    )
         else:
             if _logger:
                 _logger.error(
@@ -181,19 +188,20 @@ def main() -> None:
     publisher = MqttPublisher(client, topics)
 
     # Main loop
-    backoff = 1
     while not _shutdown.is_set():
         if not _connected:
-            _logger.warning(f"Broker disconnected, reconnecting in {backoff}s", extra={"subsystem": "mqtt"})
-            _shutdown.wait(backoff)
-            backoff = min(backoff * 2, 60)
-            try:
-                client.reconnect()
-            except Exception as e:
-                _logger.error(f"Reconnect failed: {e}", extra={"subsystem": "mqtt"})
+            # Don't call client.reconnect() here (PLAT-257): loop_start() already
+            # runs loop_forever(), which retries the connection itself on every
+            # drop (reconnect_on_failure=True is the paho default). Calling
+            # reconnect() again from this thread races that background thread on
+            # the same Client's unsynchronized socket/queue state — reconnect()
+            # closes and replaces self._sock and clears self._out_packet with no
+            # lock — and can leave qos=0 publishes silently written to a socket
+            # object the network thread has already superseded. Just wait for
+            # on_connect to flip _connected back on its own.
+            _logger.warning("Broker disconnected, waiting for automatic reconnect", extra={"subsystem": "mqtt"})
+            _shutdown.wait(1)
             continue
-
-        backoff = 1  # reset on successful connection
 
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         reading = poll_and_publish(port, publisher, _logger, ts)
@@ -214,7 +222,12 @@ def main() -> None:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     import json
     offline_payload = json.dumps({"status": "offline", "reason": "graceful_shutdown", "timestamp": ts})
-    client.publish(avail_topic, offline_payload, qos=0, retain=effective_retain(avail_topic))
+    info = client.publish(avail_topic, offline_payload, qos=0, retain=effective_retain(avail_topic))
+    if info.rc != mqtt.MQTT_ERR_SUCCESS:
+        _logger.error(
+            f"Graceful shutdown publish to {avail_topic} did not reach broker (rc={info.rc!r})",
+            extra={"subsystem": "shutdown"},
+        )
     time.sleep(0.5)
     client.loop_stop()
     client.disconnect()
