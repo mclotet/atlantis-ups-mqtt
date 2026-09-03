@@ -34,6 +34,11 @@ class NutAdapter(IUpsPort):
         except Exception as e:
             raise NutUnavailable(f"upsc subprocess failed: {e}") from e
 
+        if result.returncode != 0:
+            raise NutUnavailable(
+                f"upsc exited with code {result.returncode}: {result.stderr.strip()}"
+            )
+
         data: dict[str, str] = {}
         for line in result.stdout.splitlines():
             try:
