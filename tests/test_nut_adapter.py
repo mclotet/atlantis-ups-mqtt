@@ -6,9 +6,11 @@ from ups_mqtt.adapters.nut.nut_adapter import NutAdapter
 from ups_mqtt.domain.exceptions import NutUnavailable
 
 
-def _make_upsc_result(stdout: str) -> MagicMock:
+def _make_upsc_result(stdout: str, returncode: int = 0, stderr: str = "") -> MagicMock:
     result = MagicMock()
     result.stdout = stdout
+    result.returncode = returncode
+    result.stderr = stderr
     return result
 
 
@@ -98,6 +100,13 @@ def test_read_empty_output_returns_empty_status():
         reading = ADAPTER.read()
     assert reading.status == ""
     assert reading.battery is None
+
+
+def test_read_raises_nut_unavailable_on_nonzero_exit():
+    result = _make_upsc_result("", returncode=1, stderr="Data stale\n")
+    with patch("subprocess.run", return_value=result):
+        with pytest.raises(NutUnavailable):
+            ADAPTER.read()
 
 
 def test_read_is_online_true_for_ol():
