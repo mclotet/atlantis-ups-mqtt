@@ -1,3 +1,4 @@
+import os
 import signal
 import socket
 import sys
@@ -132,6 +133,13 @@ def main() -> None:
     )
 
     avail_topic = topics.availability
+
+    # ATLANTIS_EDGE_NODE_ID feeds AtlantisLogger's OTel resource.edge_node.id
+    # attribute (identity.md §5). Log records describe this bridge process, so
+    # they take the governed BRIDGE_EDGE_NODE_ID like the availability topic
+    # above, not the deployment env, which wires in the UPS's mission ("power")
+    # for this var. Mirrors atlantis-shelly-bridge (PLAT-245).
+    os.environ["ATLANTIS_EDGE_NODE_ID"] = BRIDGE_EDGE_NODE_ID
 
     # Bootstrap logger — stdout only until broker is connected
     _logger = AtlantisLogger.configure(

@@ -38,11 +38,13 @@ services:
       - UPS_DEVICE_ID=${UPS_DEVICE_ID:-apc-smartups750}
       - ATL_DEVICE_ID=${ATL_DEVICE_ID:-ups-mqtt}
       - ATL_SERVICE_NAME=${ATL_SERVICE_NAME:-ups-mqtt}
-      - ATL_ENV=${ATL_ENV:-production}
+      - ATL_ENV=${ATL_ENV:-pro}
       - ATL_LOG_LEVEL=${ATL_LOG_LEVEL:-INFO}
       - ATL_MQTT_LOG_MAX_PER_MINUTE=${ATL_MQTT_LOG_MAX_PER_MINUTE:-300}
       - FW_VERSION=${FW_VERSION:-1.0.0}
-      - ATLANTIS_EDGE_NODE_ID=${MQTT_EDGE_NODE_ID:-power}
+      # ATLANTIS_EDGE_NODE_ID is deliberately NOT set here: main.py overrides
+      # it unconditionally to the governed "infra" value (identity.md §5),
+      # since log records describe this bridge process, not the UPS.
       - LOG_FORMAT=json
     depends_on:
       - nut-upsd
