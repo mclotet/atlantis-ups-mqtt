@@ -8,6 +8,9 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 
 ## [Unreleased]
 
+### Changed
+- (PLAT-311, CORE-182) README: env table corrected (`power`/`ups-mqtt` defaults, `UPS_DEVICE_ID` added, `ATL_ENV` is `dev|itg|pro`, `LOG_FORMAT` added, `MQTT_TOPIC` removed, nut-upsd variables split out), controller mapping fixed, "Published topics" and "Key files" sections added, `upsc` named, submodule init step added. `tests/test_main.py` `AVAIL_TOPIC` no longer uses the retired `rack`/`raspberrypi5` identity (now `global/infra/ups-mqtt`). Bumped `libs/atlantis-core` from `53ba4f1` to `165d6c8`; `pytest -q` passes (61 passed, 1 skipped)
+
 ### Added
 - (PLAT-244) `Settings.ups_device_id` — the bridged APC Smart-UPS 750's own identity (identity.md §2.2), split out from `atl_device_id`, which now names only this bridge *process*. `UPS_DEVICE_ID` builds the `battery`/`status` topics; `ATL_DEVICE_ID` stays the identity used for structured logging and the bridge's own availability/LWT
 - (PLAT-244) `Topics.ups_availability` and `MqttPublisher.publish_ups_online()`/`publish_ups_offline()` — a second availability topic (`atlantis/global/availability/power/apc-smartups750/node/status`) reporting the UPS's own reachability via NUT, distinct from the bridge process's LWT-backed one (`.../infra/ups-mqtt/...`). NOT LWT-backed: the UPS has no MQTT connection of its own for an LWT to describe, so `ups_service.publish_ups_availability()` drives it from every poll's outcome, publishing `reason: "nut_unreachable"` when `upsc` stops answering

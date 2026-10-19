@@ -7,7 +7,7 @@ import paho.mqtt.client as mqtt
 import main
 from main import _make_on_connect
 
-AVAIL_TOPIC = "atlantis/global/availability/rack/raspberrypi5/node/status"
+AVAIL_TOPIC = "atlantis/global/availability/infra/ups-mqtt/node/status"
 FW_VERSION = "1.0.0"
 
 
