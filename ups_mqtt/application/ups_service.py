@@ -44,7 +44,7 @@ def publish_ups_availability(
     Unlike the bridge PROCESS's own availability (LWT-backed — mqtt.md
     §3.2.2), this topic has no MQTT connection to describe: it reports NUT
     reachability instead, so it is an ordinary retained publish driven by
-    each poll cycle (mqtt.md D13) rather than a connect-time birth message.
+    each poll cycle (mqtt.md §3.2.8) rather than a connect-time birth message.
     Called every cycle — including on failure — so the retained topic
     self-heals the same way `state` topics do (mqtt.md §5.1): the bridge
     must explicitly publish offline when NUT stops answering, since nothing

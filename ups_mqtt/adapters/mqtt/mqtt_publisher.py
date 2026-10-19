@@ -52,7 +52,7 @@ class Topics:
     battery: str
     status: str
     availability: str          # this BRIDGE PROCESS's own availability (LWT-backed)
-    ups_availability: str      # the bridged UPS's own availability (PLAT-244, mqtt.md D13)
+    ups_availability: str      # the bridged UPS's own availability (PLAT-244, mqtt.md §3.2.8)
 
 
 class MqttPublisher:
@@ -100,7 +100,7 @@ class MqttPublisher:
 
         NOT LWT-backed — the UPS has no MQTT connection of its own for an LWT
         to describe. This is an ordinary retained publish driven by the
-        bridge's polling (mqtt.md D13), so it is called once per successful
+        bridge's polling (mqtt.md §3.2.8), so it is called once per successful
         poll rather than once at connect time.
         """
         payload = build_availability_online(ts, ip=ip, fw=fw, mac=mac, spec="1.31")
@@ -115,7 +115,7 @@ class MqttPublisher:
 
         Called when NUT stops answering — the bridge is the only thing that
         can report this on the UPS's behalf, so it must do so explicitly
-        rather than relying on an LWT (mqtt.md D13). Unlike the LWT payload
+        rather than relying on an LWT (mqtt.md §3.2.8). Unlike the LWT payload
         (mqtt.md §3.2.2), this is an ordinary runtime publish, so it can and
         does carry a timestamp (§5.3.2 only forbids that for the LWT itself).
         """

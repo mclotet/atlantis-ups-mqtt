@@ -28,7 +28,7 @@ from ups_mqtt.config import get_settings
 # (identity.md §5) — this is this BRIDGE PROCESS's own mission, a governed
 # constant rather than a per-deployment choice, and is deliberately distinct
 # from settings.mqtt_edge_node_id, which is the bridged UPS's own mission
-# ("power"). See mqtt.md D13 for the two resulting availability topics.
+# ("power"). See mqtt.md §3.2.8 for the two resulting availability topics.
 BRIDGE_EDGE_NODE_ID = "infra"
 
 # ---------------------------------------------------------------------------
@@ -215,7 +215,7 @@ def main() -> None:
         reading = poll_and_publish(port, publisher, _logger, ts)
 
         # The UPS's own availability (PLAT-244) — not LWT-backed, so it must
-        # be driven explicitly from each poll's outcome (mqtt.md D13).
+        # be driven explicitly from each poll's outcome (mqtt.md §3.2.8).
         ip, mac = _get_network_info()
         publish_ups_availability(reading, publisher, ts, ip=ip, fw_version=fw_version, mac=mac)
 

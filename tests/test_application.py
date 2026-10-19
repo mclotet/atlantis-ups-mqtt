@@ -81,7 +81,7 @@ def test_poll_and_publish_reading_with_no_battery(logger):
 
 # ---------------------------------------------------------------------------
 # publish_ups_availability (PLAT-244) — the UPS's own availability, driven by
-# each poll's outcome rather than by an MQTT connection (mqtt.md D13).
+# each poll's outcome rather than by an MQTT connection (mqtt.md §3.2.8).
 # ---------------------------------------------------------------------------
 
 def test_publish_ups_availability_online_when_reading_present():
@@ -93,7 +93,7 @@ def test_publish_ups_availability_online_when_reading_present():
 
 def test_publish_ups_availability_offline_when_reading_is_none():
     # reading=None is exactly poll_and_publish's return value on NutUnavailable
-    # (the offline-on-NUT-failure path) — this is the case D13 exists for.
+    # (the offline-on-NUT-failure path) — this is the case §3.2.8 exists for.
     publisher = MagicMock()
     publish_ups_availability(None, publisher, TS, ip="192.168.1.50", fw_version="1.0.0", mac="c8c9a3d2f040")
     publisher.publish_ups_offline.assert_called_once_with(TS)
