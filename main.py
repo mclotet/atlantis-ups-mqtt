@@ -18,6 +18,7 @@ from atlantis_core import (
     build_telemetry_topic,
     effective_retain,
 )
+from atlantis_core.mqtt_auth import apply_auth
 
 from ups_mqtt.adapters.mqtt.mqtt_publisher import MqttPublisher, Topics
 from ups_mqtt.adapters.nut.nut_adapter import NutAdapter
@@ -54,6 +55,34 @@ def _get_network_info() -> tuple[str, str]:
         ip = "0.0.0.0"
     mac = hex(uuid.getnode())[2:].zfill(12)
     return ip, mac
+
+
+# ---------------------------------------------------------------------------
+# MQTT client
+# ---------------------------------------------------------------------------
+
+def build_client(settings, avail_topic: str, fw_version: str, client_factory=None):
+    """Create the paho client: callbacks, LWT and broker credentials.
+
+    Everything here must be set before the first ``connect()``. paho keeps the
+    credentials and the Will for its own automatic reconnects. ``apply_auth``
+    leaves the client anonymous when ATL_MQTT_USERNAME is unset, and raises
+    when a username comes without a password (PLAT-197).
+    """
+    factory = client_factory or (lambda: mqtt.Client(mqtt.CallbackAPIVersion.VERSION2))
+    client = factory()
+    client.on_connect = _make_on_connect(avail_topic, fw_version)
+    client.on_disconnect = _make_on_disconnect()
+    # qos=1 here is intentional (CORE-050): this is LWT registration, not a
+    # runtime publish. paho-mqtt implements it correctly, and it costs nothing
+    # extra — the broker delivers it once, on disconnect. See
+    # docs/standards/mqtt.md §3.2.2.
+    client.will_set(
+        avail_topic, build_availability_offline(), qos=1,
+        retain=effective_retain(avail_topic),
+    )
+    apply_auth(client, settings)
+    return client
 
 
 # ---------------------------------------------------------------------------
@@ -149,18 +178,14 @@ def main() -> None:
     )
     _logger.info("Starting UPS to MQTT bridge", extra={"subsystem": "boot"})
 
-    # Build MQTT client with LWT
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    client.on_connect = _make_on_connect(avail_topic, fw_version)
-    client.on_disconnect = _make_on_disconnect()
-    # qos=1 here is intentional (CORE-050): this is LWT registration, not a
-    # runtime publish. paho-mqtt implements it correctly, and it costs nothing
-    # extra — the broker delivers it once, on disconnect. See
-    # docs/standards/mqtt.md §3.2.2.
-    client.will_set(
-        avail_topic, build_availability_offline(), qos=1,
-        retain=effective_retain(avail_topic),
-    )
+    client = build_client(settings, avail_topic, fw_version)
+    if settings.atl_mqtt_username:
+        _logger.info(
+            f"MQTT auth: connecting as user {settings.atl_mqtt_username!r}",
+            extra={"subsystem": "mqtt"},
+        )
+    else:
+        _logger.info("MQTT auth: none configured, connecting anonymously", extra={"subsystem": "mqtt"})
 
     # Initial broker connection with exponential backoff
     backoff = 1

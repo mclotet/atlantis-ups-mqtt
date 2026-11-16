@@ -43,6 +43,8 @@ Variables the service itself reads at runtime (`ups_mqtt/config.py`, `atlantis.t
 | `UPS_PORT` | NUT server port | `3493` |
 | `MQTT_HOST` | Hostname or IP of the MQTT broker | `localhost` |
 | `MQTT_PORT` | MQTT broker port | `1883` |
+| `ATL_MQTT_USERNAME` | Broker username. Unset means connect anonymously. Applied by `atlantis_core.mqtt_auth.apply_auth` (PLAT-197) | _(unset)_ |
+| `ATL_MQTT_PASSWORD` | Broker password. Required when `ATL_MQTT_USERNAME` is set, or the service refuses to start. Never logged | _(unset)_ |
 | `SAMPLE_RATE_ONLINE` | Polling interval in seconds when UPS is online | `60` |
 | `SAMPLE_RATE_OFFLINE` | Polling interval in seconds when UPS is offline | `10` |
 | `ATL_GROUP_ID` | Physical/logical location used in MQTT topic paths | `global` |
@@ -141,6 +143,8 @@ The controller's `.env` uses prefixed variable names (`ATL_UPS_*`) to avoid coll
 | `ATL_UPS_LOG_LEVEL` | `ATL_LOG_LEVEL` |
 | `ATL_UPS_MQTT_LOG_MAX_PER_MINUTE` | `ATL_MQTT_LOG_MAX_PER_MINUTE` |
 | `UPS_FW_VERSION` | `FW_VERSION` |
+| _(compose literal)_ `ups-mqtt` | `ATL_MQTT_USERNAME` |
+| _(Docker secret `mqtt-pw-ups-mqtt`, exported by the entrypoint)_ | `ATL_MQTT_PASSWORD` |
 
 `UPS_SERIAL`, `NUT_USER` and the NUT password (a Docker secret) go to the controller's `nut-upsd` service, not to `ups-mqtt`. `UPS_NAME`, `UPS_HOST`, `UPS_PORT`, `MQTT_HOST` and `MQTT_PORT` are hardcoded in the controller's `docker-compose.yml` because they are fixed by the stack topology.
 

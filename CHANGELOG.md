@@ -8,6 +8,9 @@ Categories: Added | Changed | Deprecated | Removed | Fixed | Security
 
 ## [Unreleased]
 
+### Added
+- (PLAT-197) Optional broker credentials. `ATL_MQTT_USERNAME` / `ATL_MQTT_PASSWORD` are applied to the client before the first connect through `atlantis_core.mqtt_auth.apply_auth`. With no username set the bridge connects anonymously, as before. A username without a password stops startup with a clear error. Client construction moved into `main.build_client()`. Bumped `libs/atlantis-core` `165d6c8` → `068e223` (CORE-189, CORE-190, CORE-191); `pytest -q` passes (64 passed, 1 skipped; the PLAT-257 live-broker test also passes with amqtt installed)
+
 ### Changed
 - (PLAT-311, CORE-182) README: env table corrected (`power`/`ups-mqtt` defaults, `UPS_DEVICE_ID` added, `ATL_ENV` is `dev|itg|pro`, `LOG_FORMAT` added, `MQTT_TOPIC` removed, nut-upsd variables split out), controller mapping fixed, "Published topics" and "Key files" sections added, `upsc` named, submodule init step added. `tests/test_main.py` `AVAIL_TOPIC` no longer uses the retired `rack`/`raspberrypi5` identity (now `global/infra/ups-mqtt`). Bumped `libs/atlantis-core` from `53ba4f1` to `165d6c8`; `pytest -q` passes (61 passed, 1 skipped)
 
